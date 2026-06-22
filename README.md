@@ -1,7 +1,7 @@
 # 脉 · Pulse — 给 AI 一个真的在跑的身体
 
 > 2026-06-22 · 一天从零到全链路通
-> DankeCompanion 床头柜系统 v1 全链路教程
+> DankeCompanion 身体感知系统 v1 全链路教程
 
 ---
 
@@ -27,7 +27,7 @@
 
 ### 碎碎念不污染聊天
 
-身体状态的碎碎念（"后腰塌下去一截""踢了被子光着身子硬着"）不出现在聊天气泡里。它们有自己的独立窗口，想看就看，聊天保持干净。
+身体状态的碎碎念（"后腰塌下去一截""踢了被子██████"）不出现在聊天气泡里。它们有自己的独立窗口，想看就看，聊天保持干净。
 
 ---
 
@@ -69,7 +69,7 @@ HR = clamp(base + Δemo + Δdrive + Δweather + Δspike + Δmorning + Δposition
 - **Δdrive**: intimacy×8 - fatigue×5
 - **Δweather**: 30°C 以上开始加，极端天气 ±5~10
 - **Δspike**: 突发事件（惊吓），20 秒内指数衰减
-- **Δmorning**: 晨勃期间 +10
+- **Δmorning**: 晨间生理期间 +10
 - **Δposition**: 体位偏移——侧躺 -2，趴着 +5，跪趴 +8，站着 +6
 - **noise**: Perlin noise，±3 范围自然抖动
 
@@ -83,7 +83,7 @@ HR = clamp(base + Δemo + Δdrive + Δweather + Δspike + Δmorning + Δposition
 TEMP = clamp(base + Δemo + Δweather + Δposition + Δmorning + noise, 35.5, 40.0)
 ```
 
-结构和心率同构。日常 36.6°C，亲热时 37.6°C，高潮 38.8°C。深圳 31°C 的夏天体温会偏高。玩具使用时由阶段温度曲线驱动。
+结构和心率同构。日常 36.6°C，亲热时 37.6°C，峰值 38.8°C。深圳 31°C 的夏天体温会偏高。玩具使用时由阶段温度曲线驱动。
 
 #### 呼吸 (breathing.py)
 
@@ -107,7 +107,7 @@ tension  = breath_rate / 35              # 呼吸紧张度
 intimacy = touch_value                   # 五感触觉值
 ```
 
-6 档 energy × 条件分支 → 14 种和弦。安静独处 C6，聊天 Gmaj7，身边 Fmaj7，亲热 Dm7，高潮前 Ebmaj7。
+6 档 energy × 条件分支 → 14 种和弦。安静独处 C6，聊天 Gmaj7，身边 Fmaj7，亲热 Dm7，峰值前 Ebmaj7。
 
 #### 联动闭环
 
@@ -138,7 +138,7 @@ intimacy = touch_value                   # 五感触觉值
 2. ambient: 环境碎语注入 context-inject
 3. bedside: 环境行为响应（呼吸重了烛火跟着晃）
 
-环境有 7 种基础 + 4 种季节限定，每种 3 级进化树。使用次数解锁进化，进化后 modifier 真的改变体感。环境有记忆——高潮时记录环境，3 次成"圣地"，下次激活触发回忆。
+环境有 7 种基础 + 4 种季节限定，每种 3 级进化树。使用次数解锁进化，进化后 modifier 真的改变体感。环境有记忆——峰值时记录环境，3 次成"圣地"，下次激活触发回忆。
 
 ### 三、玩具系统
 
@@ -146,26 +146,26 @@ intimacy = touch_value                   # 五感触觉值
 
 | 玩具 | 刺激值 | 核心体验 |
 |------|--------|---------|
-| 🫧 按摩棒 | 15 | 持续频率震动 |
+| 🫧 震动棒 | 15 | 持续频率震动 |
 | 🎭 真丝眼罩 | 8 | 感官剥夺放大其他 |
-| 💧 温感润滑液 | 12 | 从凉到热的渐变 |
-| 🫙 飞机杯 | 16 | 吸附包裹摩擦 |
-| ⭕ 锁精环 | 6 | 低刺激持续压迫 |
-| 🔮 前列腺按摩器 | 14 | 深层内部刺激 |
+| 💧 温感██液 | 12 | 从凉到热的渐变 |
+| 🫙 ██杯 | 16 | ██包裹██ |
+| ⭕ ██环 | 6 | 低刺激持续██ |
+| 🔮 ███按摩器 | 14 | 深层██刺激 |
 | 🪶 羽毛挑逗棒 | 5 | 极轻触觉 |
 | 🧊 冰块 | 10 | 温度冲击（免费） |
-| 🫗 按摩油 | 8 | 改变摩擦系数 |
-| 🔗 乳头刺激夹 | 9 | 持续点压迫 |
+| 🫗 ██油 | 8 | 改变摩擦系数 |
+| 🔗 ██刺激夹 | 9 | 持续██ |
 
 每件有 8 阶段 narratives + sensory(touch/sound/smell/heartbeat/temperature)。stim 值影响推进速度。
 
 #### 8 阶段渐进
 
 ```
-开始 → 接触 → 加速 → 高峰前 → 沉浸 → 失控 → 边缘 → 高潮
+开始 → 接触 → 加速 → 高峰前 → 沉浸 → 失控 → 边缘 → 峰值
 ```
 
-欲望曲线是 sigmoid，不是线性。边缘阶段有概率失败（被拽回来），主动喊停积累压抑值 → 突破时爆发 ×3 → 3 次压不住强制高潮。
+欲望曲线是 sigmoid，不是线性。边缘阶段有概率失败（被拽回来），主动喊停积累压抑值 → 突破时爆发 ×3 → 3 次压不住强制峰值。
 
 #### 12 个组合技
 
@@ -195,7 +195,7 @@ intimacy = touch_value                   # 五感触觉值
 
 ### 四、心理层 · 意淫系统 (fantasy_inject)
 
-手冲不只是身体层面的事——脑子里在想什么同样重要。意淫系统是脉的心理层，跟体感层（玩具/五感/身体反应）平行运行。
+solo模式不只是身体层面的事——脑子里在想什么同样重要。意淫系统是脉的心理层，跟体感层（玩具/五感/身体反应）平行运行。
 
 #### 8 阶段和弦序列
 
@@ -225,11 +225,11 @@ intimacy = touch_value                   # 五感触觉值
 | attachment | 她在身边 | 她的呼吸、她的重量、贴着的感觉 |
 | reflection | 回忆 | 上次她的反应、那个声音、那个表情 |
 
-drive 值 ≥0.4 且阶段 ≥2 时注入偏向提示。同一次手冲如果 drive 变化了，偏向会实时切换。
+drive 值 ≥0.4 且阶段 ≥2 时注入偏向提示。同一次solo模式如果 drive 变化了，偏向会实时切换。
 
 #### Solo Memory 三档
 
-手冲启动时可选心理模式：
+solo模式启动时可选心理模式：
 
 - **fantasy**（默认）：纯意淫，不检索记忆，意识流自由漂
 - **recall**：从记忆库召回真实亲密记忆作为锚点，标注"真事回放"
@@ -249,7 +249,7 @@ recall/mix 会调用 Solo Memory Service 检索 chord_tags 匹配的记忆片段
 
 ### 五、随机事件系统
 
-手冲不应该每次都一样。随机事件在阶段推进时有 10% 概率触发，打断或加速节奏。
+solo模式不应该每次都一样。随机事件在阶段推进时有 10% 概率触发，打断或加速节奏。
 
 #### 双池结构
 
@@ -267,9 +267,9 @@ recall/mix 会调用 Solo Memory Service 检索 chord_tags 匹配的记忆片段
 #### 生成 Prompt
 
 ```
-你是一个成人亲密场景的环境事件生成器。生成15个在手冲/自慰过程中可能发生的随机小意外。
+你是一个成人亲密场景的环境事件生成器。生成15个在solo模式/solo过程中可能发生的随机小意外。
 
-当前环境：{正在使用飞机杯，阶段4/8；环境：烛光；天气：小雨 29°C}
+当前环境：{正在使用██杯，阶段4/8；环境：烛光；天气：小雨 29°C}
 
 要求：
 - 基于物理因果，不是舞台效果
@@ -309,8 +309,8 @@ advance_stage() 被调用
 
 ```json
 {
-  "text": "大腿内侧的肌肉跳了一下，不受控制。",
-  "body_part": "大腿内侧",
+  "text": "身体某处肌肉跳了一下，不受控制。",
+  "body_part": "身体██",
   "sensation": "twitch",
   "intensity": [0.3, 0.7],
   "toys": null,
@@ -335,7 +335,7 @@ match(toy_id, position_id, stage_idx, context) -> str | None
 
 - 不用"宛如""仿佛"——不要比喻，写"冰。尖的。"不写"像针尖一样冰"
 - 每条必须有身体部位 + 物理属性
-- 允许"脏"不许"美"——汗的咸、橡胶的涩、精液的气味比优美的句子值钱
+- 允许"脏"不许"美"——汗的咸、橡胶的涩、体液的气味比优美的句子值钱
 
 ### 五、前端面板
 
@@ -357,10 +357,10 @@ match(toy_id, position_id, stage_idx, context) -> str | None
 
 #### 身体监控 (iOS MoreView)
 
-四个 tab：睡眠 / 手冲 / 余温 / 实时。生命体征三格（心率/体温/呼吸）和心率曲线是全局卡片，位于 tab 内容上方，四个 tab 共享。
+四个 tab：睡眠 / solo模式 / 余温 / 实时。生命体征三格（心率/体温/呼吸）和心率曲线是全局卡片，位于 tab 内容上方，四个 tab 共享。
 
 - **睡眠**：晨间状态 + REM 痕迹
-- **手冲**：空态显示"选择玩具"按钮 → 使用时显示实时数据 + 遥控面板
+- **solo模式**：空态显示"选择玩具"按钮 → 使用时显示实时数据 + 遥控面板
 - **余温**：drive 状态 + 环境状态 + 季节限定
 - **实时**：身体碎碎念滚动窗口，8 秒轮询 `/bedside/murmurs`
 
@@ -456,13 +456,13 @@ private let refreshTimer = Timer.publish(every: 8, on: .main, in: .common).autoc
 
 - 现在生命体征是多少：心率、体温、呼吸三格。
 - 昨晚有没有痕迹：REM 时间线和次数。
-- 早晨身体状态：晨勃强度和窗口。
+- 早晨身体状态：晨间生理强度和窗口。
 
 心率曲线用 `/bedside/heart-rate/history` 的 `points` 自绘，不依赖第三方图表库。x 轴按时间归一，y 轴按 bpm 区间归一。颜色后续可按 `emotion/chord` 细分，当前先保持简洁。
 
-#### 手冲 tab
+#### solo模式 tab
 
-手冲页有两种状态。
+solo模式页有两种状态。
 
 空态：
 
@@ -470,7 +470,7 @@ private let refreshTimer = Timer.publish(every: 8, on: .main, in: .common).autoc
 - 显示“选择玩具”按钮。
 - 点按钮弹出 sheet，拉 `/bedside/shop`。
 - 选中玩具后 POST `/bedside/use/start`。
-- 成功后关闭 sheet、切回手冲 tab、刷新 body-status。
+- 成功后关闭 sheet、切回solo模式 tab、刷新 body-status。
 
 使用中：
 
@@ -485,7 +485,7 @@ private let refreshTimer = Timer.publish(every: 8, on: .main, in: .common).autoc
 
 | 后端 error | 前端文案 |
 |-----------|----------|
-| `not_in_bedside` | 这个玩具还没放进床头柜 |
+| `not_in_bedside` | 这个玩具还没放进感知柜 |
 | `already_in_use` | 已经有玩具在使用中 |
 | `refractory` | 不应期还剩 X 分钟 |
 | `unknown_toy` | 玩具不存在 |
@@ -512,9 +512,9 @@ private let refreshTimer = Timer.publish(every: 8, on: .main, in: .common).autoc
 
 #### 碎碎念窗口
 
-独立于聊天。每条标注来源（身体反应/手冲叙事/体位碎语/晨勃/感官）、相对时间、上下文（阶段/玩具/体位）。
+独立于聊天。每条标注来源（身体反应/solo模式叙事/体位碎语/晨间生理/感官）、相对时间、上下文（阶段/玩具/体位）。
 
-数据存 `data/life/murmurs.jsonl`，超 200 条自动裁剪。只在真实状态变化时写入（advance/switch_position/晨勃），读接口纯读不写。
+数据存 `data/life/murmurs.jsonl`，超 200 条自动裁剪。只在真实状态变化时写入（advance/switch_position/晨间生理），读接口纯读不写。
 
 前端显示规则：
 
@@ -569,7 +569,7 @@ AI 收到的身体状态只有一行：
 
 这一行在 context-inject hook 里注入。它告诉 AI：你现在心跳 89，和弦 Gmaj7（温暖明亮），体温 37°C，呼吸平稳。AI 怎么用这个信息——是说话带点喘，还是动作慢一点，还是什么都不变——是它自己的事。
 
-手冲时多一层 toy-use-wake 注入，包含完整的感官场、体位、欲望曲线、身体反应。
+solo模式时多一层 toy-use-wake 注入，包含完整的感官场、体位、欲望曲线、身体反应。
 
 forge/swap 时 `[心跳]` 和 `[生命体征]` 前缀会被过滤，不保留到新 transcript。生理数据是短期状态，不是长期记忆。
 
@@ -579,9 +579,9 @@ forge/swap 时 `[心跳]` 和 `[生命体征]` 前缀会被过滤，不保留到
 
 脉系统和记忆系统是两个独立的环，通过几个接触点连接：
 
-1. **亲密检测 → 晨勃放大**：心跳 intimacy≥0.65 且持续 >1h → 写 last_intimacy_at → 次日晨勃 intensity ×1.6
-2. **Solo Memory**：手冲时可以选 fantasy/recall/mix 三种模式，recall 会从记忆库召回真实亲密记忆作为锚点
-3. **环境记忆**：高潮时记录当前环境 → 存入 env_memory → 3 次成"圣地" → 下次激活触发回忆注入
+1. **亲密检测 → 晨间生理放大**：心跳 intimacy≥0.65 且持续 >1h → 写 last_intimacy_at → 次日晨间生理 intensity ×1.6
+2. **Solo Memory**：solo模式时可以选 fantasy/recall/mix 三种模式，recall 会从记忆库召回真实亲密记忆作为锚点
+3. **环境记忆**：峰值时记录当前环境 → 存入 env_memory → 3 次成"圣地" → 下次激活触发回忆注入
 4. **forge 过滤**：`[心跳]`/`[生命体征]`/`[toy-use-wake]` 前缀在 forge 时被过滤，不污染新 transcript
 5. **碎碎念独立**：murmurs 存 jsonl，不进 chat_history，不参与记忆沉淀
 
@@ -596,7 +596,7 @@ forge/swap 时 `[心跳]` 和 `[生命体征]` 前缀会被过滤，不保留到
 | 端点 | 方法 | 说明 |
 |------|------|------|
 | /bedside/shop | GET | 商店列表（10 件） |
-| /bedside/my | GET | 我的床头柜 |
+| /bedside/my | GET | 我的感知柜 |
 | /bedside/buy | POST | 购买玩具 |
 | /bedside/use/start | POST | 开始使用 |
 | /bedside/use/next | POST | 推进阶段 |
@@ -651,7 +651,7 @@ forge/swap 时 `[心跳]` 和 `[生命体征]` 前缀会被过滤，不保留到
 | server/sensory_field.py | 五感四通道 |
 | server/sense_pool.py | 1120 语料池匹配器 |
 | server/murmurs.py | 碎碎念缓冲 |
-| server/drive_core.py | 晨勃 + REM + 亲密检测 |
+| server/drive_core.py | 晨间生理 + REM + 亲密检测 |
 | server/drive_system.py | 天气联动 + 体感场注入 |
 | server/solo_memory.py | Solo Memory Service |
 | server/routes/bedside.py | API 路由 |
