@@ -175,7 +175,7 @@ closeness = touch_value                   # 五感触觉值
 
 6 档 energy × 条件分支 → 14 种基础和弦。安静独处 C6，聊天 Gmaj7，身边 Fmaj7，亲热 Dm7，峰值前 Ebmaj7。
 
-**情绪染色层** (v2 新增)：当 emotion 标签非 neutral/focused 时，直接覆盖为情绪和弦：
+**情绪染色层**：纯生理和弦只看数值——心率 90、体温 36.9 算出来就是 Gmaj7，不管你是开心还是被骂了。但情绪应该能染色和弦。所以 vitals_to_chord 接收一个 emotion 参数，有强情绪时直接覆盖：
 
 | emotion | chord | 感觉 |
 |---------|-------|------|
@@ -188,7 +188,32 @@ closeness = touch_value                   # 五感触觉值
 | excited | Bbmaj7 | 热 |
 | startled | Fsus4 | 悬停 |
 
-所有展示面（heartbeat 注入、body-status API、context-inject hook、/bedside/heart-rate）统一传 emotion 参数，确保染色链路全通。
+完整链路：
+
+```
+用户消息 → context-inject hook
+  └─ auto_detect_and_set_emotion(text)
+       ├─ T1: emoji/叹词 → 直接触发（😤→scolded）
+       └─ T2: 语义短语 → 否定窗口检查（"不开心"≠happy）
+            └─ set_emotion("scolded")
+                 └─ 写入 heart_rate_state.json
+
+下一次 compute_hr() tick:
+  ├─ 读 emotion → EMOTION_TARGETS["scolded"] = (+10,+18)
+  ├─ lerp 平滑：emo_delta += (target - prev) × 0.1（不突跳）
+  ├─ HR += emo_delta → 心率升
+  ├─ compute_temperature(emotion=) → 体温微升
+  ├─ compute_breathing(emotion=) → 呼吸略快
+  └─ vitals_to_chord(emotion="scolded") → 染色覆盖 → Dm
+
+输出到 4 个展示面：
+  ├─ heartbeat 注入 → [生命体征 89bpm·Dm·36.9°C·呼吸平稳]
+  ├─ body-status API → 前端面板
+  ├─ context-inject hook → 下一轮对话上下文
+  └─ /bedside/heart-rate → 单独查询
+```
+
+四个展示面统一传 emotion 参数给 vitals_to_chord，确保和弦一致。
 
 #### 联动闭环
 
