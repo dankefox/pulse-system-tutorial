@@ -65,7 +65,20 @@ HR = clamp(base + Δemo + Δdrive + Δweather + Δspike + Δmorning + Δposition
 ```
 
 - **base**: 按时间段不同——深睡 52-60，浅睡 58-68，醒着躺 62-72，坐着 68-78，站着 72-85
-- **Δemo**: 情绪偏移，lerp 平滑过渡——neutral ±0，happy +8~15，intimate +15~25，excited +25~40
+- **Δemo**: 情绪偏移，lerp 平滑过渡（不突变）。情绪同时驱动心率、体温、呼吸三个子系统：
+
+| emotion | 心率偏移 | 体感 |
+|---------|--------|------|
+| neutral | ±0 | 平静 |
+| happy | +5~15 | 暖 |
+| excited | +8~18 | 兴奋 |
+| nervous | +8~20 | 紧 |
+| scolded | +10~18 | 闷、委屈 |
+| sad | -3~+2 | 沉 |
+| focused | -2~+2 | 安静 |
+| intimate | +12~25 | 热 |
+| excited | +15~30 | 很热 |
+| startled | +20~40 | 炸 |
 - **Δdrive**: closeness×8 - fatigue×5
 - **Δweather**: 30°C 以上开始加，极端天气 ±5~10
 - **Δspike**: 突发事件（惊吓），20 秒内指数衰减
