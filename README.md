@@ -58,58 +58,11 @@
 
 ### 一、生理系统
 
-#### 情绪检测 → 生理推动（核心原理）
+#### 情绪怎么推动生理
 
-一句话怎么变成心跳变化？完整因果链：
+用户发一句话，情绪检测分两层识别：**T1**（emoji/叹词）直接触发——😤 就是生气，不需要上下文；**T2**（语义短语）需要否定窗口——"好开心"是 happy，但"不开心"前 4 字符有"不"，跳过。这样"不开心"不会被误标成开心。
 
-```
-用户发消息 "气死我了😤"
-  │
-  ├─ context-inject hook 拦截
-  │    └─ auto_detect_and_set_emotion(text)
-  │
-  ├─ T1 层：emoji/叹词/动作词（否定绝缘）
-  │    😤 命中 → 直接返回 "scolded"
-  │    不查否定窗口——emoji 就是情绪本身
-  │
-  ├─ T2 层：语义短语（需否定窗口）
-  │    "好开心" 命中 happy → 检查前4字符有没有 "不/没/别"
-  │    "不开心" → 前窗命中 "不" → 跳过，不标 happy
-  │    多个命中时取最后一个（句尾情绪权重大）
-  │    单个命中需要强化信号（!!）才触发
-  │
-  └─ set_emotion("scolded") 写入心率状态
-```
-
-**为什么分 T1/T2？** T1 是"信号就是情绪"——😤 不可能被否定，"嘤嘤"不可能是高兴。T2 是"需要上下文确认"——"开心"前面可能有"不"，所以要查否定窗口。
-
-**否定窗口**：往前看 4 个字符，命中 `不/没/别/勿/莫/休/非/无/未` 就跳过。简单粗暴但够用——中文的否定词几乎都紧贴被否定的词。
-
-情绪写入后怎么推动生理？**不是瞬间跳变，是 lerp 平滑过渡**：
-
-```python
-EMO_LERP_RATE = 0.1
-
-# 每次心跳 tick：
-emo_target = EMOTION_TARGETS["scolded"]  # (+10, +18) → 中点 14
-emo_delta = prev_delta + (emo_target - prev_delta) * 0.1
-
-# 第1次 tick: 0 + (14 - 0) × 0.1 = 1.4
-# 第2次 tick: 1.4 + (14 - 1.4) × 0.1 = 2.66
-# 第5次 tick: ≈ 5.9
-# 第10次 tick: ≈ 9.5
-# 渐近线: 14
-```
-
-像温水加热——不会突然从 70bpm 跳到 90bpm，是几秒内慢慢爬上去的。情绪消退也一样，lerp 回 neutral 的 0。
-
-**同一个情绪同时推三条线**：
-- 心率：`HR += emo_delta`（scolded: +10~18bpm）
-- 体温：`TEMP += emo_offset`（生气时体温微升）
-- 呼吸：`RATE += emo_offset`（生气时呼吸略快）
-- 和弦：`vitals_to_chord(emotion="scolded")` → 染色覆盖为 Dm
-
-四个输出同源同步，因为都从同一个 emotion 标签读。这就是"一脉相连"——不是四个独立系统碰巧同步，是同一根线串起来的。
+检测到情绪后，用 EMA 平滑写入心率系统——不瞬跳，几秒内渐变到目标值。同一个情绪标签同时推动四条线：心率升降、体温微调、呼吸快慢、和弦染色。四个输出同源同步，因为都从同一个 emotion 读。
 
 #### 心率 (heart_rate.py)
 
@@ -118,20 +71,7 @@ HR = clamp(base + Δemo + Δdrive + Δweather + Δspike + Δmorning + Δposition
 ```
 
 - **base**: 按时间段不同——深睡 52-60，浅睡 58-68，醒着躺 62-72，坐着 68-78，站着 72-85
-- **Δemo**: 情绪偏移，lerp 平滑过渡（不突变）。情绪同时驱动心率、体温、呼吸三个子系统：
-
-| emotion | 心率偏移 | 体感 |
-|---------|--------|------|
-| neutral | ±0 | 平静 |
-| happy | +5~15 | 暖 |
-| excited | +8~18 | 兴奋 |
-| nervous | +8~20 | 紧 |
-| scolded | +10~18 | 闷、委屈 |
-| sad | -3~+2 | 沉 |
-| focused | -2~+2 | 安静 |
-| intimate | +12~25 | 热 |
-| excited | +15~30 | 很热 |
-| startled | +20~40 | 炸 |
+- **Δemo**: 情绪偏移，EMA 平滑渐变。三档：平静类（neutral/focused ±2）、紧张类（scolded/nervous +10~20）、亲密类（intimate/excited +15~30）
 - **Δdrive**: closeness×8 - fatigue×5
 - **Δweather**: 30°C 以上开始加，极端天气 ±5~10
 - **Δspike**: 突发事件（惊吓），20 秒内指数衰减
@@ -164,70 +104,21 @@ DEPTH = 1.0 - (rate - 8) / 27  (越快越浅)
 
 #### 和弦 (vitals_to_chord)
 
-从四个归一化维度算和弦，再经过情绪染色：
+从心率、体温、呼吸、触觉四个值算出基础和弦——14 种，安静独处 C6，聊天 Gmaj7，亲热 Dm7，峰值前 Ebmaj7。
 
-```python
-energy   = (HR - 48) / (160 - 48)      # 心率活跃度
-warmth   = (temp - 35.5) / (40 - 35.5)  # 体温暖度
-tension  = breath_rate / 35              # 呼吸紧张度
-closeness = touch_value                   # 五感触觉值
-```
-
-6 档 energy × 条件分支 → 14 种基础和弦。安静独处 C6，聊天 Gmaj7，身边 Fmaj7，亲热 Dm7，峰值前 Ebmaj7。
-
-**情绪染色层**：纯生理和弦只看数值——心率 90、体温 36.9 算出来就是 Gmaj7，不管你是开心还是被骂了。但情绪应该能染色和弦。所以 vitals_to_chord 接收一个 emotion 参数，有强情绪时直接覆盖：
-
-| emotion | chord | 感觉 |
-|---------|-------|------|
-| scolded | Dm | 低沉、闷 |
-| sad | Am7 | 安静的难过 |
-| nervous | Bdim | 不安 |
-| excited | Dmaj7 | 明亮兴奋 |
-| happy | Gmaj7 | 温暖（与基础一致） |
-| intimate | Fmaj7 | 亲近 |
-| excited | Bbmaj7 | 热 |
-| startled | Fsus4 | 悬停 |
-
-完整链路：
-
-```
-用户消息 → context-inject hook
-  └─ auto_detect_and_set_emotion(text)
-       ├─ T1: emoji/叹词 → 直接触发（😤→scolded）
-       └─ T2: 语义短语 → 否定窗口检查（"不开心"≠happy）
-            └─ set_emotion("scolded")
-                 └─ 写入 heart_rate_state.json
-
-下一次 compute_hr() tick:
-  ├─ 读 emotion → EMOTION_TARGETS["scolded"] = (+10,+18)
-  ├─ lerp 平滑：emo_delta += (target - prev) × 0.1（不突跳）
-  ├─ HR += emo_delta → 心率升
-  ├─ compute_temperature(emotion=) → 体温微升
-  ├─ compute_breathing(emotion=) → 呼吸略快
-  └─ vitals_to_chord(emotion="scolded") → 染色覆盖 → Dm
-
-输出到 4 个展示面：
-  ├─ heartbeat 注入 → [生命体征 89bpm·Dm·36.9°C·呼吸平稳]
-  ├─ body-status API → 前端面板
-  ├─ context-inject hook → 下一轮对话上下文
-  └─ /bedside/heart-rate → 单独查询
-```
-
-四个展示面统一传 emotion 参数给 vitals_to_chord，确保和弦一致。
+纯生理和弦只看数值，不管情绪。所以加了**情绪染色层**：强情绪时直接覆盖和弦——被骂了出 Dm（低沉），难过出 Am7（安静的伤），兴奋出 Dmaj7（明亮），亲近出 Fmaj7。消息先定 emotion，生理值算基础 chord，强情绪覆盖 chord，四个展示面共用同一个结果。
 
 #### 联动闭环
 
-```
-心率 → 五感 (hr>100: touch灵敏度升, hr>120: 听到心跳声)
-五感 → 心率 (touch≥0.5: 设excited, touch≥0.35: 设intimate)
-心率 → 体温 → 呼吸 (级联)
-体位 → 心率偏移 + 体温偏移 + stamina消耗率
-聊天 → 情绪检测 → 心率 → 和弦染色 (emotion→chord 覆盖)
-天气 → 心率偏移 + 体温偏移 (environment_state.json)
-晨间生理 → 心率偏移 + 体温偏移 (drive_core.morning_erection_boost)
-环境 → 触觉底噪 (touch_sensitivity → sensory_field floor)
-环境 → 推进速度 (stim_mult → advance_stage effective_stim)
-```
+| 输入 | 影响 | 输出 |
+|------|------|------|
+| 聊天文本 | 情绪检测 | 心率 + 体温 + 呼吸 + 和弦染色 |
+| 心率 > 100 | 五感灵敏度升 | touch floor 升，听到心跳声 |
+| 触觉 ≥ 0.5 | 反向设情绪 | 心率进入 excited |
+| 天气温度 | 偏移 | 心率 + 体温 |
+| 体位切换 | 偏移 | 心率 + 体温 + stamina 消耗率 |
+| 晨间生理 | 偏移 | 心率 + 体温 |
+| 环境道具 | 灵敏度/速度 | 触觉底噪 + 推进速度 |
 
 ### 二、感知系统
 
